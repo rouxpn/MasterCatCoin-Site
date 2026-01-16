@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ZoomieCoin (ZME)</title>
+  <meta name="description" content="ZoomieCoin (ZME) — A token that celebrates cat zoomies in the world" />
+
+  <link rel="icon" href="assets/logo.png" />
+  <link rel="stylesheet" href="styles.css" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <nav class="topnav">
+    <div class="nav-inner">
+      <div class="nav-left">
+        <img src="assets/logo.png" alt="ZoomieCoin logo" class="nav-logo" />
+        <div class="nav-title">ZoomieCoin <span class="sym">(ZME)</span></div>
+      </div>
+      <div class="nav-links">
+        <a class="active" href="/">Home</a>
+        <a href="/docs.html">Docs</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="wrap">
+    <header class="hero">
+      <div class="hero-inner">
+
+        <!-- LEFT: text + buttons -->
+        <div class="hero-left">
+          <h1>ZoomieCoin <span class="muted">(ZME)</span></h1>
+          <p class="tagline">A token that celebrates cat zoomies</p>
+          <p class="subline">Token on Solana blockchain</p>
+
+          <div class="pill-row">
+            <span class="pill">Supply: 1,000,000</span>
+            <span class="pill ok">Mint authority: disabled</span>
+            <span class="pill ok">LP: burned</span>
+            <p class="small">
+             Only <strong><span id="poolAmt">…</span> ZME</strong> available in the public pool
+            <span class="muted">· updated <span id="poolUpdated">…</span></span>
+            </p>
+            
+          </div>
+
+          <div class="hero-actions">
+            <a class="btn primary" href="https://raydium.io/swap/" target="_blank">Buy on Raydium</a>
+            <a class="btn secondary" href="https://jup.ag/swap/SOL-ZME" target="_blank">Buy on Jupiter</a>
+            <a class="btn ghost" href="/docs.html">Docs / White paper</a>
+          </div>
+
+          <p class="helper">
+            If your wallet doesn’t show ZME, add it as a custom token using the mint address below.
+          </p>
+        </div>
+
+        <!-- RIGHT: logo -->
+        <div class="hero-right">
+          <img src="assets/logo.png" alt="ZoomieCoin logo" class="hero-logo">
+        </div>
+
+      </div>
+    </header>
+
+
+    <section class="grid2">
+      <section class="card">
+        <div class="section-title">
+          <h2>Mint address</h2>
+          <span class="pill">Integer token only</span>
+        </div>
+
+        <div class="copybox">
+          <code id="mint" class="break">12eep6yiUMjkEL9YGmvfoaAtJRLd6gG3rVyLPGbW8hrC</code>
+          <button class="btn small" id="copyMintBtn" type="button">Copy</button>
+        </div>
+
+        <div class="row">
+          <a class="link" href="https://solscan.io/token/12eep6yiUMjkEL9YGmvfoaAtJRLd6gG3rVyLPGbW8hrC" target="_blank" rel="noreferrer">Solscan →</a>
+          <a class="link" href="https://github.com/rouxpn/ZoomieCoin" target="_blank" rel="noreferrer">GitHub (metadata/logo) →</a>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Proof / Links</h2>
+        <ul class="kv">
+          <li><span>LP mint</span><code class="break">8oVkFbtPhjEXeENeo8FZeRZU5Nqch4VzBvtyjSfzaTLs</code></li>
+          <li><span>LP burn tx</span><code class="break">3TSLGGo6YA2kGgkd4gaxhQnfeYTCRcyCiKHLVk6TXPtfHLQ2xo3WAWQeMfFgLtXYoB1BDRdHXWyb1RsH9yJEuzR4</code></li>
+        </ul>
+        <p class="small">Paste the LP mint and burn signature into Solscan to verify liquidity is locked.</p>
+      </section>
+    </section>
+
+    <footer class="footer">
+      <p>Disclaimer: ZoomieCoin (ZME) is a degen token. Expect volatility.</p>
+    </footer>
+  </main>
+
+  <div class="toast" id="toast">Copied!</div>
+
+  <script>
+    const mintEl = document.getElementById("mint");
+    const btn = document.getElementById("copyMintBtn");
+    const toast = document.getElementById("toast");
+
+    function showToast(text){
+      toast.textContent = text;
+      toast.classList.add("show");
+      window.clearTimeout(window.__toastTimer);
+      window.__toastTimer = window.setTimeout(() => toast.classList.remove("show"), 900);
+    }
+
+    btn.addEventListener("click", async () => {
+      const mint = mintEl.textContent.trim();
+      try {
+        await navigator.clipboard.writeText(mint);
+        showToast("Mint copied");
+      } catch (e) {
+        showToast("Copy failed — select manually");
+      }
+    });
+  </script>
+  
+<script>
+  async function loadPoolBalance() {
+    const amtEl = document.getElementById("poolAmt");
+    const updEl = document.getElementById("poolUpdated");
+    if (!amtEl || !updEl) return;
+
+    try {
+      const res = await fetch("/data/pool.json", { cache: "no-store" });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+
+      const data = await res.json();
+
+      // amount
+      const n = Number(data.amount);
+      amtEl.textContent = Number.isFinite(n) ? n.toLocaleString() : data.amount;
+
+      // updated time (stored by python as UTC ISO)
+      if (data.updated_utc) {
+        const d = new Date(data.updated_utc);
+        updEl.textContent = d.toLocaleString([], {
+          year: "numeric",
+          month: "short",
+          day: "2-digit",
+          hour: "numeric",
+          minute: "2-digit"
+        });
+      } else {
+        updEl.textContent = "—";
+      }
+    } catch (e) {
+      console.warn("Pool balance load failed:", e);
+      amtEl.textContent = "—";
+      updEl.textContent = "—";
+    }
+  }
+
+  loadPoolBalance();
+</script>
+</body>
+</html>
